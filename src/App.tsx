@@ -1,50 +1,78 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import "./App.css";
+import { layers, toolbarActions, tools } from "./config/shellData";
+import {
+  PropertiesPanel,
+  ToolSidebar,
+  TopBar,
+  WorkspaceCanvas,
+} from "./components";
+
+const importActionLabel = "Import Image";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageSrc, setImageSrc] = useState<string>();
+  const [imageName, setImageName] = useState<string>();
+  const [errorMessage, setErrorMessage] = useState<string>();
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  useEffect(() => {
+    return () => {
+      if (imageSrc) {
+        URL.revokeObjectURL(imageSrc);
+      }
+    };
+  }, [imageSrc]);
+
+  const handleToolbarAction = (action: string) => {
+    if (action !== importActionLabel) {
+      return;
+    }
+
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      setErrorMessage("No image selected.");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("Unsupported file type. Please select an image.");
+      return;
+    }
+
+    if (imageSrc) {
+      URL.revokeObjectURL(imageSrc);
+    }
+
+    setImageSrc(URL.createObjectURL(file));
+    setImageName(file.name);
+    setErrorMessage(undefined);
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="app-shell">
+      <TopBar actions={toolbarActions} onAction={handleToolbarAction} />
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="file-input-hidden"
+        onChange={handleImageChange}
+      />
+
+      <div className="workspace-layout">
+        <ToolSidebar tools={tools} />
+        <WorkspaceCanvas imageSrc={imageSrc} imageName={imageName} errorMessage={errorMessage} />
+        <PropertiesPanel layers={layers} imageName={imageName} />
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   );
 }
 

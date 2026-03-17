@@ -1,29 +1,34 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import "./App.css";
-import PropertiesPanel from "./components/PropertiesPanel";
-import ToolSidebar from "./components/ToolSidebar";
-import TopBar from "./components/TopBar";
-import WorkspaceCanvas from "./components/WorkspaceCanvas";
+import { layers, toolbarActions, tools } from "./config/shellData";
+import {
+  PropertiesPanel,
+  ToolSidebar,
+  TopBar,
+  WorkspaceCanvas,
+} from "./components";
 
-const allowedMimeTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
-const allowedExtensions = new Set(["png", "jpg", "jpeg", "webp"]);
+const importActionLabel = "Import Image";
+const acceptedImageTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
+const acceptedImageExtensions = new Set(["png", "jpg", "jpeg", "webp"]);
 
 function App() {
-  const [imageUrl, setImageUrl] = useState<string>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageSrc, setImageSrc] = useState<string>();
   const [imageName, setImageName] = useState<string>();
   const [errorMessage, setErrorMessage] = useState<string>();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
-      if (imageUrl) {
-        URL.revokeObjectURL(imageUrl);
+      if (imageSrc) {
+        URL.revokeObjectURL(imageSrc);
       }
     };
-  }, [imageUrl]);
+  }, [imageSrc]);
 
-  const handleImportImageClick = () => {
+  const triggerImagePicker = () => {
     const input = fileInputRef.current;
+
     if (!input) {
       return;
     }
@@ -36,16 +41,22 @@ function App() {
     input.click();
   };
 
-  const isImageFileAllowed = (file: File) => {
-    if (allowedMimeTypes.has(file.type)) {
+  const handleToolbarAction = (action: string) => {
+    if (action === importActionLabel) {
+      triggerImagePicker();
+    }
+  };
+
+  const isAllowedImageFile = (file: File) => {
+    if (acceptedImageTypes.has(file.type)) {
       return true;
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    return ext ? allowedExtensions.has(ext) : false;
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    return extension ? acceptedImageExtensions.has(extension) : false;
   };
 
-  const handleImageSelected = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
 
@@ -54,34 +65,41 @@ function App() {
       return;
     }
 
-    if (!isImageFileAllowed(file)) {
+    if (!isAllowedImageFile(file)) {
       setErrorMessage("Unsupported file type. Use png, jpg, jpeg, or webp.");
       return;
     }
 
-    if (imageUrl) {
-      URL.revokeObjectURL(imageUrl);
+    if (imageSrc) {
+      URL.revokeObjectURL(imageSrc);
     }
 
-    setImageUrl(URL.createObjectURL(file));
+    setImageSrc(URL.createObjectURL(file));
     setImageName(file.name);
     setErrorMessage(undefined);
   };
 
   return (
     <div className="app-shell">
-      <TopBar onImportImage={handleImportImageClick} />
+      <TopBar actions={toolbarActions} onAction={handleToolbarAction} />
+
       <input
+        id="image-import-input"
         ref={fileInputRef}
         type="file"
         accept=".png,.jpg,.jpeg,.webp"
         className="file-input-hidden"
-        onChange={handleImageSelected}
+        onChange={handleImageChange}
       />
+
       <div className="workspace-layout">
-        <ToolSidebar />
-        <WorkspaceCanvas imageUrl={imageUrl} imageName={imageName} errorMessage={errorMessage} />
-        <PropertiesPanel imageName={imageName} />
+        <ToolSidebar tools={tools} />
+        <WorkspaceCanvas
+          imageSrc={imageSrc}
+          imageName={imageName}
+          errorMessage={errorMessage}
+        />
+        <PropertiesPanel layers={layers} imageName={imageName} />
       </div>
     </div>
   );

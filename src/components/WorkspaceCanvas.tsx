@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { MouseEvent, WheelEvent } from "react";
 
 type WorkspaceCanvasProps = {
-  imageUrl?: string;
+  imageSrc?: string;
   imageName?: string;
   errorMessage?: string;
 };
@@ -21,8 +21,16 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function WorkspaceCanvas({ imageUrl, imageName, errorMessage }: WorkspaceCanvasProps) {
-  const [view, setView] = useState<ViewState>({ zoom: 1, offsetX: 0, offsetY: 0 });
+function WorkspaceCanvas({
+  imageSrc,
+  imageName,
+  errorMessage,
+}: WorkspaceCanvasProps) {
+  const [view, setView] = useState<ViewState>({
+    zoom: 1,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const imageStageRef = useRef<HTMLDivElement>(null);
@@ -30,10 +38,10 @@ function WorkspaceCanvas({ imageUrl, imageName, errorMessage }: WorkspaceCanvasP
   useEffect(() => {
     setView({ zoom: 1, offsetX: 0, offsetY: 0 });
     setIsDragging(false);
-  }, [imageUrl]);
+  }, [imageSrc]);
 
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
-    if (!imageUrl) {
+    if (!imageSrc) {
       return;
     }
 
@@ -67,7 +75,7 @@ function WorkspaceCanvas({ imageUrl, imageName, errorMessage }: WorkspaceCanvasP
   };
 
   const handleMouseDown = (event: MouseEvent<HTMLDivElement>) => {
-    if (!imageUrl) {
+    if (!imageSrc) {
       return;
     }
 
@@ -103,7 +111,8 @@ function WorkspaceCanvas({ imageUrl, imageName, errorMessage }: WorkspaceCanvasP
     <main className="workspace" aria-label="Document workspace">
       <div className="workspace-placeholder">
         {errorMessage ? <p className="workspace-error">{errorMessage}</p> : null}
-        {imageUrl ? (
+
+        {imageSrc ? (
           <figure className="workspace-image-wrapper">
             <div
               ref={imageStageRef}
@@ -115,7 +124,7 @@ function WorkspaceCanvas({ imageUrl, imageName, errorMessage }: WorkspaceCanvasP
               onMouseLeave={stopDragging}
             >
               <img
-                src={imageUrl}
+                src={imageSrc}
                 alt={imageName ?? "Imported image"}
                 className="workspace-image"
                 style={{
@@ -126,7 +135,11 @@ function WorkspaceCanvas({ imageUrl, imageName, errorMessage }: WorkspaceCanvasP
               />
             </div>
             <figcaption>{imageName}</figcaption>
-            <button type="button" onClick={resetView} className="workspace-reset-button">
+            <button
+              type="button"
+              onClick={resetView}
+              className="workspace-reset-button"
+            >
               Reset View
             </button>
           </figure>

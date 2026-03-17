@@ -1,50 +1,89 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import "./App.css";
+import PropertiesPanel from "./components/PropertiesPanel";
+import ToolSidebar from "./components/ToolSidebar";
+import TopBar from "./components/TopBar";
+import WorkspaceCanvas from "./components/WorkspaceCanvas";
+
+const allowedMimeTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
+const allowedExtensions = new Set(["png", "jpg", "jpeg", "webp"]);
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [imageUrl, setImageUrl] = useState<string>();
+  const [imageName, setImageName] = useState<string>();
+  const [errorMessage, setErrorMessage] = useState<string>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  useEffect(() => {
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [imageUrl]);
+
+  const handleImportImageClick = () => {
+    const input = fileInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    if (typeof input.showPicker === "function") {
+      input.showPicker();
+      return;
+    }
+
+    input.click();
+  };
+
+  const isImageFileAllowed = (file: File) => {
+    if (allowedMimeTypes.has(file.type)) {
+      return true;
+    }
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    return ext ? allowedExtensions.has(ext) : false;
+  };
+
+  const handleImageSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      setErrorMessage("No image selected.");
+      return;
+    }
+
+    if (!isImageFileAllowed(file)) {
+      setErrorMessage("Unsupported file type. Use png, jpg, jpeg, or webp.");
+      return;
+    }
+
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+    }
+
+    setImageUrl(URL.createObjectURL(file));
+    setImageName(file.name);
+    setErrorMessage(undefined);
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app-shell">
+      <TopBar onImportImage={handleImportImageClick} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".png,.jpg,.jpeg,.webp"
+        className="file-input-hidden"
+        onChange={handleImageSelected}
+      />
+      <div className="workspace-layout">
+        <ToolSidebar />
+        <WorkspaceCanvas imageUrl={imageUrl} imageName={imageName} errorMessage={errorMessage} />
+        <PropertiesPanel imageName={imageName} />
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   );
 }
 

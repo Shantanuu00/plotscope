@@ -1,50 +1,64 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
+const tools = ["Select", "Distance", "Area", "Angle", "Scale"];
+const layers = ["Boundary", "Parcels", "Reference"];
+
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
-
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="app-shell">
+      <header className="top-toolbar" role="banner">
+        <div className="brand">PlotScope</div>
+        <nav aria-label="Primary tools">
+          <ul className="toolbar-actions">
+            <li>
+              <button type="button">Open Plan</button>
+            </li>
+            <li>
+              <button type="button">Import Image</button>
+            </li>
+            <li>
+              <button type="button">Export Report</button>
+            </li>
+          </ul>
+        </nav>
+      </header>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="workspace-layout">
+        <aside className="left-sidebar" aria-label="Tool sidebar">
+          <h2>Tools</h2>
+          <ul>
+            {tools.map((tool) => (
+              <li key={tool}>
+                <button type="button">{tool}</button>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        <main className="workspace" aria-label="Document workspace">
+          <div className="workspace-placeholder">
+            <h1>Workspace</h1>
+            <p>Plan canvas and measurement overlays will appear here.</p>
+          </div>
+        </main>
+
+        <aside className="right-panel" aria-label="Properties panel">
+          <h2>Properties</h2>
+          <section>
+            <h3>Document</h3>
+            <p>No file loaded.</p>
+          </section>
+          <section>
+            <h3>Layers</h3>
+            <ul>
+              {layers.map((layer) => (
+                <li key={layer}>{layer}</li>
+              ))}
+            </ul>
+          </section>
+        </aside>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   );
 }
 

@@ -4,16 +4,12 @@ type PropertiesPanelProps = {
 };
 
 function PropertiesPanel({ layers, imageName }: PropertiesPanelProps) {
-};
-
-function PropertiesPanel({ layers }: PropertiesPanelProps) {
   return (
     <aside className="right-panel" aria-label="Properties panel">
       <h2>Properties</h2>
       <section>
         <h3>Document</h3>
         <p>{imageName ?? "No file loaded."}</p>
-        <p>No file loaded.</p>
       </section>
       <section>
         <h3>Layers</h3>

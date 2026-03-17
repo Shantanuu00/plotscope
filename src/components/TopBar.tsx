@@ -1,5 +1,9 @@
 type TopBarProps = {
   actions: string[];
+  onAction?: (action: string) => void;
+};
+
+function TopBar({ actions, onAction }: TopBarProps) {
 };
 
 function TopBar({ actions }: TopBarProps) {
@@ -10,6 +14,9 @@ function TopBar({ actions }: TopBarProps) {
         <ul className="toolbar-actions">
           {actions.map((action) => (
             <li key={action}>
+              <button type="button" onClick={() => onAction?.(action)}>
+                {action}
+              </button>
               <button type="button">{action}</button>
             </li>
           ))}

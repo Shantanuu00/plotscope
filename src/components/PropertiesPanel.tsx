@@ -1,5 +1,9 @@
 type PropertiesPanelProps = {
   layers: string[];
+  imageName?: string;
+};
+
+function PropertiesPanel({ layers, imageName }: PropertiesPanelProps) {
 };
 
 function PropertiesPanel({ layers }: PropertiesPanelProps) {
@@ -8,6 +12,7 @@ function PropertiesPanel({ layers }: PropertiesPanelProps) {
       <h2>Properties</h2>
       <section>
         <h3>Document</h3>
+        <p>{imageName ?? "No file loaded."}</p>
         <p>No file loaded.</p>
       </section>
       <section>

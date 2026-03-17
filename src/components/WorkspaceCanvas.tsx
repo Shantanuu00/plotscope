@@ -7,9 +7,15 @@ type WorkspaceCanvasProps = {
   errorMessage?: string;
 };
 
+type ViewState = {
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+};
+
 const minZoom = 0.5;
 const maxZoom = 4;
-const zoomStep = 0.1;
+const wheelZoomSensitivity = 0.0018;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -20,14 +26,17 @@ function WorkspaceCanvas({
   imageName,
   errorMessage,
 }: WorkspaceCanvasProps) {
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [view, setView] = useState<ViewState>({
+    zoom: 1,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
+  const imageStageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setZoom(1);
-    setOffset({ x: 0, y: 0 });
+    setView({ zoom: 1, offsetX: 0, offsetY: 0 });
     setIsDragging(false);
   }, [imageSrc]);
 
@@ -37,10 +46,32 @@ function WorkspaceCanvas({
     }
 
     event.preventDefault();
-    const direction = event.deltaY > 0 ? -1 : 1;
-    setZoom((currentZoom) =>
-      clamp(currentZoom + direction * zoomStep, minZoom, maxZoom),
-    );
+
+    const stage = imageStageRef.current;
+    if (!stage) {
+      return;
+    }
+
+    const stageRect = stage.getBoundingClientRect();
+    const cursorX = event.clientX - stageRect.left - stageRect.width / 2;
+    const cursorY = event.clientY - stageRect.top - stageRect.height / 2;
+
+    setView((current) => {
+      const zoomFactor = Math.exp(-event.deltaY * wheelZoomSensitivity);
+      const nextZoom = clamp(current.zoom * zoomFactor, minZoom, maxZoom);
+
+      if (nextZoom === current.zoom) {
+        return current;
+      }
+
+      const ratio = nextZoom / current.zoom;
+
+      return {
+        zoom: nextZoom,
+        offsetX: (current.offsetX - cursorX) * ratio + cursorX,
+        offsetY: (current.offsetY - cursorY) * ratio + cursorY,
+      };
+    });
   };
 
   const handleMouseDown = (event: MouseEvent<HTMLDivElement>) => {
@@ -51,8 +82,8 @@ function WorkspaceCanvas({
     event.preventDefault();
     setIsDragging(true);
     dragStartRef.current = {
-      x: event.clientX - offset.x,
-      y: event.clientY - offset.y,
+      x: event.clientX - view.offsetX,
+      y: event.clientY - view.offsetY,
     };
   };
 
@@ -61,23 +92,19 @@ function WorkspaceCanvas({
       return;
     }
 
-    setOffset({
-      x: event.clientX - dragStartRef.current.x,
-      y: event.clientY - dragStartRef.current.y,
-    });
+    setView((current) => ({
+      ...current,
+      offsetX: event.clientX - dragStartRef.current.x,
+      offsetY: event.clientY - dragStartRef.current.y,
+    }));
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseLeave = () => {
+  const stopDragging = () => {
     setIsDragging(false);
   };
 
   const resetView = () => {
-    setZoom(1);
-    setOffset({ x: 0, y: 0 });
+    setView({ zoom: 1, offsetX: 0, offsetY: 0 });
   };
 
   return (
@@ -88,21 +115,21 @@ function WorkspaceCanvas({
         {imageSrc ? (
           <figure className="workspace-image-wrapper">
             <div
-              className={`workspace-image-stage ${
-                isDragging ? "is-dragging" : ""
-              }`}
+              ref={imageStageRef}
+              className={`workspace-image-stage ${isDragging ? "is-dragging" : ""}`}
               onWheel={handleWheel}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseLeave}
+              onMouseUp={stopDragging}
+              onMouseLeave={stopDragging}
             >
               <img
                 src={imageSrc}
                 alt={imageName ?? "Imported image"}
                 className="workspace-image"
                 style={{
-                  transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                  transform: `translate(${view.offsetX}px, ${view.offsetY}px) scale(${view.zoom})`,
+                  transformOrigin: "center center",
                 }}
                 draggable={false}
               />

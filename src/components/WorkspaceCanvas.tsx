@@ -23,6 +23,12 @@ function WorkspaceCanvas({ imageSrc, imageName, errorMessage }: WorkspaceCanvasP
             <p>Import an image to start measurements.</p>
           </>
         )}
+function WorkspaceCanvas() {
+  return (
+    <main className="workspace" aria-label="Document workspace">
+      <div className="workspace-placeholder">
+        <h1>Workspace</h1>
+        <p>Plan canvas and measurement overlays will appear here.</p>
       </div>
     </main>
   );

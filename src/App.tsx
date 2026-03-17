@@ -96,6 +96,15 @@ function App() {
         <ToolSidebar tools={tools} />
         <WorkspaceCanvas imageSrc={imageSrc} imageName={imageName} errorMessage={errorMessage} />
         <PropertiesPanel layers={layers} imageName={imageName} />
+
+function App() {
+  return (
+    <div className="app-shell">
+      <TopBar actions={toolbarActions} />
+      <div className="workspace-layout">
+        <ToolSidebar tools={tools} />
+        <WorkspaceCanvas />
+        <PropertiesPanel layers={layers} />
       </div>
     </div>
   );

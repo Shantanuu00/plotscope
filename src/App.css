@@ -27,10 +27,6 @@ body {
   background: #eef3fb;
 }
 
-.file-input-hidden {
-  display: none;
-}
-
 .top-toolbar {
   height: 56px;
   display: flex;
@@ -127,27 +123,6 @@ button:hover {
 
 .workspace-placeholder p {
   margin: 0.5rem 0 0;
-}
-
-.workspace-image-wrapper {
-  margin: 0;
-  display: grid;
-  gap: 0.5rem;
-  max-height: 100%;
-}
-
-.workspace-image {
-  max-width: 100%;
-  max-height: 70vh;
-  border-radius: 8px;
-  border: 1px solid #cfdaf0;
-  object-fit: contain;
-}
-
-.workspace-error {
-  margin: 0 0 0.5rem;
-  color: #b9383f;
-  font-weight: 500;
 }
 
 .right-panel section + section {

@@ -1,10 +1,9 @@
-const layers = ["Boundary", "Parcels", "Reference"];
-
 type PropertiesPanelProps = {
+  layers: string[];
   imageName?: string;
 };
 
-function PropertiesPanel({ imageName }: PropertiesPanelProps) {
+function PropertiesPanel({ layers, imageName }: PropertiesPanelProps) {
   return (
     <aside className="right-panel" aria-label="Properties panel">
       <h2>Properties</h2>

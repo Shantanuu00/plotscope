@@ -1,6 +1,8 @@
-const tools = ["Select", "Distance", "Area", "Angle", "Scale"];
+type ToolSidebarProps = {
+  tools: string[];
+};
 
-function ToolSidebar() {
+function ToolSidebar({ tools }: ToolSidebarProps) {
   return (
     <aside className="left-sidebar" aria-label="Tool sidebar">
       <h2>Tools</h2>

@@ -173,6 +173,16 @@ button:disabled {
   gap: 0.56rem;
 }
 
+.right-panel section + section {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #d8e1f0;
+}
+
+.right-panel strong {
+  color: #173b72;
+}
+
 .workspace {
   padding: 1.1rem;
   display: flex;

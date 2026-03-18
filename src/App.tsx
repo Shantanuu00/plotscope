@@ -3,7 +3,7 @@ import "./App.css";
 import PropertiesPanel from "./components/PropertiesPanel";
 import ToolSidebar from "./components/ToolSidebar";
 import TopBar from "./components/TopBar";
-import WorkspaceCanvas from "./components/WorkspaceCanvas";
+import WorkspaceCanvas, { type WorkspaceMeasurementSummary } from "./components/WorkspaceCanvas";
 
 const allowedMimeTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
 const allowedExtensions = new Set(["png", "jpg", "jpeg", "webp"]);
@@ -12,6 +12,18 @@ function App() {
   const [imageUrl, setImageUrl] = useState<string>();
   const [imageName, setImageName] = useState<string>();
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [measurementSummary, setMeasurementSummary] = useState<WorkspaceMeasurementSummary>({
+    calibrationReady: false,
+    calibrationStatus: "Add calibration points to start.",
+    polygonClosed: false,
+    pointCount: 0,
+    pixelArea: 0,
+    pixelPerimeter: 0,
+    calibratedArea: null,
+    calibratedPerimeter: null,
+    lengthUnit: "m",
+    areaUnit: "m²",
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -80,8 +92,13 @@ function App() {
       />
       <div className="workspace-layout">
         <ToolSidebar />
-        <WorkspaceCanvas imageUrl={imageUrl} imageName={imageName} errorMessage={errorMessage} />
-        <PropertiesPanel imageName={imageName} />
+        <WorkspaceCanvas
+          imageUrl={imageUrl}
+          imageName={imageName}
+          errorMessage={errorMessage}
+          onSummaryChange={setMeasurementSummary}
+        />
+        <PropertiesPanel imageName={imageName} summary={measurementSummary} />
       </div>
     </div>
   );

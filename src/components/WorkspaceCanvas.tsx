@@ -1,11 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, MouseEvent, WheelEvent } from "react";
 
+export type WorkspaceMeasurementSummary = {
+  calibrationReady: boolean;
+  calibrationStatus: string;
+  polygonClosed: boolean;
+  pointCount: number;
+  pixelArea: number;
+  pixelPerimeter: number;
+  calibratedArea: number | null;
+  calibratedPerimeter: number | null;
+  lengthUnit: string;
+  areaUnit: string;
+};
+
 type WorkspaceCanvasProps = {
   imageUrl?: string;
   imageSrc?: string;
   imageName?: string;
   errorMessage?: string;
+  onSummaryChange?: (summary: WorkspaceMeasurementSummary) => void;
 };
 
 type ViewState = {
@@ -84,7 +98,7 @@ function convertLengthValue(value: number, from: LengthUnit, to: LengthUnit) {
   return from === "m" ? value * 3.28084 : value / 3.28084;
 }
 
-function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: WorkspaceCanvasProps) {
+function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage, onSummaryChange }: WorkspaceCanvasProps) {
   const resolvedImageSrc = imageSrc ?? imageUrl;
   const [view, setView] = useState<ViewState>({ zoom: 1, offsetX: 0, offsetY: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -172,6 +186,33 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
   const calibratedPerimeter = polygonPerimeter * unitsPerPixel;
   const calibratedArea = polygonArea * unitsPerPixel * unitsPerPixel;
   const areaUnitLabel = `${calibrationUnit}²`;
+
+  useEffect(() => {
+    onSummaryChange?.({
+      calibrationReady: isCalibrationReady,
+      calibrationStatus,
+      polygonClosed: isPolygonClosed,
+      pointCount: polygonPoints.length,
+      pixelArea: polygonArea,
+      pixelPerimeter: polygonPerimeter,
+      calibratedArea: isCalibrationReady ? calibratedArea : null,
+      calibratedPerimeter: isCalibrationReady ? calibratedPerimeter : null,
+      lengthUnit: calibrationUnit,
+      areaUnit: areaUnitLabel,
+    });
+  }, [
+    onSummaryChange,
+    isCalibrationReady,
+    calibrationStatus,
+    isPolygonClosed,
+    polygonPoints.length,
+    polygonArea,
+    polygonPerimeter,
+    calibratedArea,
+    calibratedPerimeter,
+    calibrationUnit,
+    areaUnitLabel,
+  ]);
 
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     if (!resolvedImageSrc) {

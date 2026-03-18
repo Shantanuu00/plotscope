@@ -185,6 +185,13 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     setDraggingVertexIndex(null);
   };
 
+  const undoLastPoint = () => {
+    if (isPolygonClosed) {
+      return;
+    }
+
+    setPolygonPoints((current) => current.slice(0, -1));
+  };
 
   const getImageCoordinates = (clientX: number, clientY: number) => {
     const stage = imageStageRef.current;
@@ -307,6 +314,13 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
               <span className="workspace-zoom-readout">{Math.round(view.zoom * 100)}%</span>
               <button type="button" onClick={resetView} className="workspace-reset-button">
                 Reset View
+              </button>
+              <button
+                type="button"
+                onClick={undoLastPoint}
+                disabled={isPolygonClosed || polygonPoints.length === 0}
+              >
+                Undo Last Point
               </button>
               <button
                 type="button"

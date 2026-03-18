@@ -217,10 +217,22 @@ button:disabled {
   border: 1px solid #cfdbef;
   border-radius: 12px;
   background: #ffffff;
-  cursor: grab;
   display: grid;
   place-items: center;
   box-shadow: 0 10px 26px rgba(20, 45, 80, 0.08);
+}
+
+.workspace-image-stage.workspace-mode-pan {
+  cursor: grab;
+}
+
+.workspace-image-stage.workspace-mode-draw,
+.workspace-image-stage.workspace-mode-calibrate {
+  cursor: crosshair;
+}
+
+.workspace-image-stage.workspace-mode-edit {
+  cursor: default;
 }
 
 .workspace-image-stage.is-dragging {
@@ -411,4 +423,48 @@ button:disabled {
   margin: 0;
   color: #5d6f8d;
   font-weight: 500;
+}
+
+
+.workspace-calibration-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem;
+}
+
+.workspace-calibration-input-row select {
+  border: 1px solid #b7d4c3;
+  border-radius: 8px;
+  padding: 0.42rem 0.52rem;
+  font: inherit;
+  color: #1b355e;
+  background: #ffffff;
+}
+
+
+.workspace-mode-switch {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+}
+
+.workspace-mode-button {
+  padding: 0.34rem 0.7rem;
+  border-radius: 999px;
+}
+
+.workspace-mode-button.is-active {
+  border-color: #7da1da;
+  background: linear-gradient(180deg, #e8f0ff 0%, #dce9ff 100%);
+  color: #173e76;
+  font-weight: 700;
+}
+
+.workspace-mode-label {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #4a6186;
+  font-weight: 600;
 }

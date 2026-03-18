@@ -19,6 +19,21 @@ type CanvasPoint = {
   y: number;
 };
 
+type LengthUnit = "m" | "ft";
+type WorkspaceMode = "pan" | "draw" | "edit" | "calibrate";
+
+const lengthUnitLabels: Record<LengthUnit, string> = {
+  m: "meters",
+  ft: "feet",
+};
+
+const modeLabels: Record<WorkspaceMode, string> = {
+  pan: "Pan",
+  draw: "Draw Polygon",
+  edit: "Edit Polygon",
+  calibrate: "Calibrate",
+};
+
 const minZoom = 0.5;
 const maxZoom = 4;
 const wheelZoomSensitivity = 0.0018;
@@ -61,18 +76,28 @@ function calculatePolygonPerimeter(points: CanvasPoint[]) {
   return perimeter;
 }
 
+function convertLengthValue(value: number, from: LengthUnit, to: LengthUnit) {
+  if (from === to) {
+    return value;
+  }
+
+  return from === "m" ? value * 3.28084 : value / 3.28084;
+}
+
 function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: WorkspaceCanvasProps) {
   const resolvedImageSrc = imageSrc ?? imageUrl;
   const [view, setView] = useState<ViewState>({ zoom: 1, offsetX: 0, offsetY: 0 });
   const [isDragging, setIsDragging] = useState(false);
 
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("pan");
+
   const [polygonPoints, setPolygonPoints] = useState<CanvasPoint[]>([]);
   const [isPolygonClosed, setIsPolygonClosed] = useState(false);
   const [draggingVertexIndex, setDraggingVertexIndex] = useState<number | null>(null);
 
-  const [isCalibrationMode, setIsCalibrationMode] = useState(false);
   const [calibrationPoints, setCalibrationPoints] = useState<CanvasPoint[]>([]);
   const [knownDistanceInput, setKnownDistanceInput] = useState("");
+  const [calibrationUnit, setCalibrationUnit] = useState<LengthUnit>("m");
 
   const dragStartRef = useRef({ x: 0, y: 0 });
   const dragMovedRef = useRef(false);
@@ -83,13 +108,15 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     setView({ zoom: 1, offsetX: 0, offsetY: 0 });
     setIsDragging(false);
 
+    setWorkspaceMode("pan");
+
     setPolygonPoints([]);
     setIsPolygonClosed(false);
     setDraggingVertexIndex(null);
 
-    setIsCalibrationMode(false);
     setCalibrationPoints([]);
     setKnownDistanceInput("");
+    setCalibrationUnit("m");
   }, [resolvedImageSrc]);
 
   const polygonArea = useMemo(() => {
@@ -132,11 +159,11 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     }
 
     if (!knownDistance) {
-      return "Enter known real-world distance to compute scale.";
+      return `Enter known real-world distance in ${lengthUnitLabels[calibrationUnit]} to compute scale.`;
     }
 
     return "Calibration complete.";
-  }, [calibrationPoints.length, knownDistance]);
+  }, [calibrationPoints.length, knownDistance, calibrationUnit]);
 
   const pixelsPerUnit = knownDistance && calibrationPixelDistance ? calibrationPixelDistance / knownDistance : 0;
   const unitsPerPixel = knownDistance && calibrationPixelDistance ? knownDistance / calibrationPixelDistance : 0;
@@ -144,6 +171,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
 
   const calibratedPerimeter = polygonPerimeter * unitsPerPixel;
   const calibratedArea = polygonArea * unitsPerPixel * unitsPerPixel;
+  const areaUnitLabel = `${calibrationUnit}²`;
 
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     if (!resolvedImageSrc) {
@@ -180,7 +208,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
   };
 
   const handleMouseDown = (event: MouseEvent<HTMLDivElement>) => {
-    if (!resolvedImageSrc) {
+    if (!resolvedImageSrc || workspaceMode !== "pan") {
       return;
     }
 
@@ -222,7 +250,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
   };
 
   const handleMouseMove = (event: MouseEvent<HTMLDivElement>) => {
-    if (draggingVertexIndex !== null) {
+    if (draggingVertexIndex !== null && workspaceMode === "edit") {
       const coords = getImageCoordinates(event.clientX, event.clientY);
       if (!coords) {
         return;
@@ -234,7 +262,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
       return;
     }
 
-    if (!isDragging) {
+    if (!isDragging || workspaceMode !== "pan") {
       return;
     }
 
@@ -293,16 +321,16 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     setPolygonPoints((current) => current.slice(0, -1));
   };
 
-  const toggleCalibrationMode = () => {
-    setIsCalibrationMode((current) => !current);
-  };
-
   const clearCalibration = () => {
     setCalibrationPoints([]);
     setKnownDistanceInput("");
   };
 
   const startVertexDrag = (event: MouseEvent<SVGCircleElement>, index: number) => {
+    if (workspaceMode !== "edit") {
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
     setDraggingVertexIndex(index);
@@ -312,6 +340,21 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
 
   const handleKnownDistanceChange = (event: ChangeEvent<HTMLInputElement>) => {
     setKnownDistanceInput(event.target.value);
+  };
+
+  const handleCalibrationUnitChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextUnit = event.target.value as LengthUnit;
+
+    setKnownDistanceInput((current) => {
+      const parsed = Number(current);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        return current;
+      }
+
+      return convertLengthValue(parsed, calibrationUnit, nextUnit).toFixed(4);
+    });
+
+    setCalibrationUnit(nextUnit);
   };
 
   const handleStageClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -324,7 +367,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
       return;
     }
 
-    if (isCalibrationMode) {
+    if (workspaceMode === "calibrate") {
       setCalibrationPoints((current) => {
         if (current.length >= 2) {
           return current;
@@ -335,7 +378,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
       return;
     }
 
-    if (isPolygonClosed) {
+    if (workspaceMode !== "draw" || isPolygonClosed) {
       return;
     }
 
@@ -351,9 +394,23 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
         {errorMessage ? <p className="workspace-error">{errorMessage}</p> : null}
         {resolvedImageSrc ? (
           <figure className="workspace-image-wrapper">
+            <div className="workspace-mode-switch" role="group" aria-label="Workspace mode">
+              {(Object.keys(modeLabels) as WorkspaceMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`workspace-mode-button ${workspaceMode === mode ? "is-active" : ""}`}
+                  onClick={() => setWorkspaceMode(mode)}
+                >
+                  {modeLabels[mode]}
+                </button>
+              ))}
+            </div>
+            <p className="workspace-mode-label">Active mode: {modeLabels[workspaceMode]}</p>
+
             <div
               ref={imageStageRef}
-              className={`workspace-image-stage ${isDragging ? "is-dragging" : ""}`}
+              className={`workspace-image-stage workspace-mode-${workspaceMode} ${isDragging ? "is-dragging" : ""}`}
               onWheel={handleWheel}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
@@ -442,22 +499,19 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
               <button
                 type="button"
                 onClick={undoLastPoint}
-                disabled={isPolygonClosed || polygonPoints.length === 0 || isCalibrationMode}
+                disabled={workspaceMode !== "draw" || isPolygonClosed || polygonPoints.length === 0}
               >
                 Undo Last Point
               </button>
               <button
                 type="button"
                 onClick={closePolygon}
-                disabled={isPolygonClosed || polygonPoints.length < 3 || isCalibrationMode}
+                disabled={workspaceMode === "calibrate" || isPolygonClosed || polygonPoints.length < 3}
               >
                 Close Polygon
               </button>
               <button type="button" onClick={clearPolygon} disabled={polygonPoints.length === 0}>
                 Clear Polygon
-              </button>
-              <button type="button" onClick={toggleCalibrationMode}>
-                {isCalibrationMode ? "Exit Calibration" : "Calibration Mode"}
               </button>
               <button
                 type="button"
@@ -480,10 +534,10 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
                 isCalibrationReady ? (
                   <>
                     <p className="workspace-area-readout">
-                      Calibrated area: {calibratedArea.toFixed(4)} unit²
+                      Calibrated area: {calibratedArea.toFixed(4)} {areaUnitLabel}
                     </p>
                     <p className="workspace-area-readout">
-                      Calibrated perimeter: {calibratedPerimeter.toFixed(4)} unit
+                      Calibrated perimeter: {calibratedPerimeter.toFixed(4)} {calibrationUnit}
                     </p>
                   </>
                 ) : (
@@ -499,23 +553,29 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
               <p className="workspace-calibration-status">{calibrationStatus}</p>
               <label className="workspace-calibration-field">
                 Known distance
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={knownDistanceInput}
-                  onChange={handleKnownDistanceChange}
-                  placeholder="Enter distance"
-                />
+                <div className="workspace-calibration-input-row">
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={knownDistanceInput}
+                    onChange={handleKnownDistanceChange}
+                    placeholder="Enter distance"
+                  />
+                  <select value={calibrationUnit} onChange={handleCalibrationUnitChange}>
+                    <option value="m">Meters (m)</option>
+                    <option value="ft">Feet (ft)</option>
+                  </select>
+                </div>
               </label>
               <p className="workspace-calibration-readout">
                 Pixel distance: {calibrationPixelDistance ? calibrationPixelDistance.toFixed(2) : "--"} px
               </p>
               <p className="workspace-calibration-readout">
-                Scale: {pixelsPerUnit ? `${pixelsPerUnit.toFixed(4)} px/unit` : "--"}
+                Scale: {pixelsPerUnit ? `${pixelsPerUnit.toFixed(4)} px/${calibrationUnit}` : "--"}
               </p>
               <p className="workspace-calibration-readout">
-                Inverse scale: {unitsPerPixel ? `${unitsPerPixel.toFixed(6)} unit/px` : "--"}
+                Inverse scale: {unitsPerPixel ? `${unitsPerPixel.toFixed(6)} ${calibrationUnit}/px` : "--"}
               </p>
             </section>
           </figure>

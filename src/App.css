@@ -389,3 +389,26 @@ button:disabled {
   color: #1b355e;
   background: #ffffff;
 }
+
+
+.workspace-measurement-readout {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #d6dfef;
+  border-radius: 10px;
+  background: rgba(248, 251, 255, 0.9);
+  text-align: left;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.workspace-measurement-readout h3 {
+  margin: 0 0 0.2rem;
+  color: #213d69;
+}
+
+.workspace-measurement-note {
+  margin: 0;
+  color: #5d6f8d;
+  font-weight: 500;
+}

@@ -45,6 +45,22 @@ function calculatePolygonArea(points: CanvasPoint[]) {
   return Math.abs(area / 2);
 }
 
+function calculatePolygonPerimeter(points: CanvasPoint[]) {
+  if (points.length < 2) {
+    return 0;
+  }
+
+  let perimeter = 0;
+
+  for (let index = 0; index < points.length; index += 1) {
+    const current = points[index];
+    const next = points[(index + 1) % points.length];
+    perimeter += Math.hypot(next.x - current.x, next.y - current.y);
+  }
+
+  return perimeter;
+}
+
 function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: WorkspaceCanvasProps) {
   const resolvedImageSrc = imageSrc ?? imageUrl;
   const [view, setView] = useState<ViewState>({ zoom: 1, offsetX: 0, offsetY: 0 });
@@ -84,6 +100,14 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     return calculatePolygonArea(polygonPoints);
   }, [isPolygonClosed, polygonPoints]);
 
+  const polygonPerimeter = useMemo(() => {
+    if (!isPolygonClosed) {
+      return 0;
+    }
+
+    return calculatePolygonPerimeter(polygonPoints);
+  }, [isPolygonClosed, polygonPoints]);
+
   const calibrationPixelDistance = useMemo(() => {
     if (calibrationPoints.length !== 2) {
       return 0;
@@ -116,6 +140,10 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
 
   const pixelsPerUnit = knownDistance && calibrationPixelDistance ? calibrationPixelDistance / knownDistance : 0;
   const unitsPerPixel = knownDistance && calibrationPixelDistance ? knownDistance / calibrationPixelDistance : 0;
+  const isCalibrationReady = unitsPerPixel > 0;
+
+  const calibratedPerimeter = polygonPerimeter * unitsPerPixel;
+  const calibratedArea = polygonArea * unitsPerPixel * unitsPerPixel;
 
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     if (!resolvedImageSrc) {
@@ -440,9 +468,31 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
               </button>
             </div>
 
-            <p className="workspace-area-readout">
-              Area: {isPolygonClosed ? `${polygonArea.toFixed(2)} px²` : "-- px²"}
-            </p>
+            <section className="workspace-measurement-readout" aria-label="Polygon measurements">
+              <h3>Polygon Measurements</h3>
+              <p className="workspace-area-readout">
+                Pixel area: {isPolygonClosed ? `${polygonArea.toFixed(2)} px²` : "--"}
+              </p>
+              <p className="workspace-area-readout">
+                Pixel perimeter: {isPolygonClosed ? `${polygonPerimeter.toFixed(2)} px` : "--"}
+              </p>
+              {isPolygonClosed ? (
+                isCalibrationReady ? (
+                  <>
+                    <p className="workspace-area-readout">
+                      Calibrated area: {calibratedArea.toFixed(4)} unit²
+                    </p>
+                    <p className="workspace-area-readout">
+                      Calibrated perimeter: {calibratedPerimeter.toFixed(4)} unit
+                    </p>
+                  </>
+                ) : (
+                  <p className="workspace-measurement-note">
+                    Calibration required for real-world measurements.
+                  </p>
+                )
+              ) : null}
+            </section>
 
             <section className="workspace-calibration-panel" aria-label="Calibration settings">
               <h3>Calibration</h3>

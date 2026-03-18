@@ -338,3 +338,54 @@ button:disabled {
     display: none;
   }
 }
+
+
+.workspace-calibration-line {
+  stroke: #1f8a5c;
+  stroke-width: 2.5;
+  stroke-dasharray: 7 4;
+}
+
+.workspace-calibration-point {
+  fill: #1f8a5c;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.workspace-calibration-panel {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #cfe0d5;
+  border-radius: 10px;
+  background: rgba(242, 250, 246, 0.9);
+  text-align: left;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.workspace-calibration-panel h3 {
+  margin: 0;
+  color: #1f5c44;
+}
+
+.workspace-calibration-status,
+.workspace-calibration-readout {
+  margin: 0;
+  color: #2f4f3f;
+}
+
+.workspace-calibration-field {
+  display: grid;
+  gap: 0.25rem;
+  font-weight: 600;
+  color: #2b5541;
+}
+
+.workspace-calibration-field input {
+  border: 1px solid #b7d4c3;
+  border-radius: 8px;
+  padding: 0.42rem 0.56rem;
+  font: inherit;
+  color: #1b355e;
+  background: #ffffff;
+}

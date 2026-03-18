@@ -16,6 +16,7 @@ type ViewState = {
 const minZoom = 0.5;
 const maxZoom = 4;
 const wheelZoomSensitivity = 0.0018;
+const buttonZoomFactor = 1.2;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -103,6 +104,13 @@ function WorkspaceCanvas({
     setIsDragging(false);
   };
 
+  const adjustZoom = (zoomFactor: number) => {
+    setView((current) => ({
+      ...current,
+      zoom: clamp(current.zoom * zoomFactor, minZoom, maxZoom),
+    }));
+  };
+
   const resetView = () => {
     setView({ zoom: 1, offsetX: 0, offsetY: 0 });
   };
@@ -135,13 +143,29 @@ function WorkspaceCanvas({
               />
             </div>
             <figcaption>{imageName}</figcaption>
-            <button
-              type="button"
-              onClick={resetView}
-              className="workspace-reset-button"
-            >
-              Reset View
-            </button>
+            <div className="workspace-controls" aria-label="Zoom controls">
+              <button
+                type="button"
+                onClick={() => adjustZoom(buttonZoomFactor)}
+                disabled={view.zoom >= maxZoom}
+              >
+                Zoom In
+              </button>
+              <button
+                type="button"
+                onClick={() => adjustZoom(1 / buttonZoomFactor)}
+                disabled={view.zoom <= minZoom}
+              >
+                Zoom Out
+              </button>
+              <button
+                type="button"
+                onClick={resetView}
+                className="workspace-reset-button"
+              >
+                Reset View
+              </button>
+            </div>
           </figure>
         ) : (
           <>

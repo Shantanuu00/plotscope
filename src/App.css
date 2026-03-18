@@ -190,3 +190,9 @@ button {
   stroke: #ffffff;
   stroke-width: 1.5;
 }
+
+.workspace-area-readout {
+  margin: 0;
+  font-weight: 600;
+  color: #334b6d;
+}

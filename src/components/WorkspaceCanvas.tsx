@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, WheelEvent } from "react";
 
 type WorkspaceCanvasProps = {
@@ -28,11 +28,29 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function calculatePolygonArea(points: PolygonPoint[]) {
+  if (points.length < 3) {
+    return 0;
+  }
+
+  let area = 0;
+
+  for (let index = 0; index < points.length; index += 1) {
+    const current = points[index];
+    const next = points[(index + 1) % points.length];
+
+    area += current.x * next.y - next.x * current.y;
+  }
+
+  return Math.abs(area / 2);
+}
+
 function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: WorkspaceCanvasProps) {
   const resolvedImageSrc = imageSrc ?? imageUrl;
   const [view, setView] = useState<ViewState>({ zoom: 1, offsetX: 0, offsetY: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [polygonPoints, setPolygonPoints] = useState<PolygonPoint[]>([]);
+  const [isPolygonClosed, setIsPolygonClosed] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const dragMovedRef = useRef(false);
   const imageStageRef = useRef<HTMLDivElement>(null);
@@ -42,7 +60,16 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     setView({ zoom: 1, offsetX: 0, offsetY: 0 });
     setIsDragging(false);
     setPolygonPoints([]);
+    setIsPolygonClosed(false);
   }, [resolvedImageSrc]);
+
+  const polygonArea = useMemo(() => {
+    if (!isPolygonClosed) {
+      return 0;
+    }
+
+    return calculatePolygonArea(polygonPoints);
+  }, [isPolygonClosed, polygonPoints]);
 
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     if (!resolvedImageSrc) {
@@ -129,8 +156,21 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     setView({ zoom: 1, offsetX: 0, offsetY: 0 });
   };
 
+  const closePolygon = () => {
+    if (polygonPoints.length < 3) {
+      return;
+    }
+
+    setIsPolygonClosed(true);
+  };
+
+  const clearPolygon = () => {
+    setPolygonPoints([]);
+    setIsPolygonClosed(false);
+  };
+
   const handleStageClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (!resolvedImageSrc || dragMovedRef.current) {
+    if (!resolvedImageSrc || dragMovedRef.current || isPolygonClosed) {
       return;
     }
 
@@ -194,10 +234,10 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
                   draggable={false}
                 />
                 <svg className="workspace-drawing-overlay" aria-label="Polygon overlay">
-                  {polygonPoints.length >= 3 ? (
+                  {isPolygonClosed && polygonPoints.length >= 3 ? (
                     <polygon className="workspace-polygon-fill" points={pointList} />
                   ) : null}
-                  {polygonPoints.length >= 2 ? (
+                  {polygonPoints.length >= 2 && !isPolygonClosed ? (
                     <polyline className="workspace-polygon-line" points={pointList} />
                   ) : null}
                   {polygonPoints.map((point, index) => (
@@ -232,7 +272,20 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
               <button type="button" onClick={resetView} className="workspace-reset-button">
                 Reset View
               </button>
+              <button
+                type="button"
+                onClick={closePolygon}
+                disabled={isPolygonClosed || polygonPoints.length < 3}
+              >
+                Close Polygon
+              </button>
+              <button type="button" onClick={clearPolygon} disabled={polygonPoints.length === 0}>
+                Clear Polygon
+              </button>
             </div>
+            <p className="workspace-area-readout">
+              Area: {isPolygonClosed ? `${polygonArea.toFixed(2)} px²` : "-- px²"}
+            </p>
           </figure>
         ) : (
           <>

@@ -33,28 +33,63 @@ body {
 }
 
 .top-toolbar {
-  min-height: 64px;
+  min-height: 68px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1.2rem;
   border-bottom: 1px solid #d3deef;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   box-shadow: 0 2px 14px rgba(16, 36, 68, 0.06);
+  gap: 0.75rem;
+}
+
+.toolbar-left {
+  min-width: 0;
 }
 
 .brand {
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.46rem;
   letter-spacing: -0.02em;
   color: #0d2448;
+  line-height: 1.1;
+}
+
+.toolbar-context {
+  margin: 0.14rem 0 0;
+  color: #60779d;
+  font-size: 0.84rem;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 26px;
+  background: #d4deef;
 }
 
 .toolbar-actions {
   display: flex;
-  gap: 0.65rem;
+  gap: 0.55rem;
   align-items: center;
+}
+
+.toolbar-actions-secondary button {
+  color: #355a8d;
+}
+
+.toolbar-actions-primary button:first-child {
+  border-color: #8baadb;
+  background: linear-gradient(180deg, #f3f7ff 0%, #e6efff 100%);
+  font-weight: 600;
 }
 
 button {
@@ -276,5 +311,22 @@ button:disabled {
   .left-sidebar,
   .right-panel {
     padding: 1rem;
+  }
+}
+
+
+@media (max-width: 900px) {
+  .top-toolbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .toolbar-divider {
+    display: none;
   }
 }

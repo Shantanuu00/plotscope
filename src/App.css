@@ -271,6 +271,14 @@ button:disabled {
   fill: #1b5fd4;
   stroke: #ffffff;
   stroke-width: 1.5;
+  cursor: grab;
+  pointer-events: all;
+}
+
+.workspace-polygon-point.is-active {
+  cursor: grabbing;
+  fill: #0e4eb5;
+  stroke-width: 2;
 }
 
 .workspace-controls {

@@ -51,6 +51,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
   const [isDragging, setIsDragging] = useState(false);
   const [polygonPoints, setPolygonPoints] = useState<PolygonPoint[]>([]);
   const [isPolygonClosed, setIsPolygonClosed] = useState(false);
+  const [draggingVertexIndex, setDraggingVertexIndex] = useState<number | null>(null);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const dragMovedRef = useRef(false);
   const imageStageRef = useRef<HTMLDivElement>(null);
@@ -61,6 +62,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     setIsDragging(false);
     setPolygonPoints([]);
     setIsPolygonClosed(false);
+    setDraggingVertexIndex(null);
   }, [resolvedImageSrc]);
 
   const polygonArea = useMemo(() => {
@@ -120,6 +122,18 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
   };
 
   const handleMouseMove = (event: MouseEvent<HTMLDivElement>) => {
+    if (draggingVertexIndex !== null) {
+      const coords = getImageCoordinates(event.clientX, event.clientY);
+      if (!coords) {
+        return;
+      }
+
+      setPolygonPoints((current) =>
+        current.map((point, index) => (index === draggingVertexIndex ? coords : point)),
+      );
+      return;
+    }
+
     if (!isDragging) {
       return;
     }
@@ -143,6 +157,7 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
 
   const stopDragging = () => {
     setIsDragging(false);
+    setDraggingVertexIndex(null);
   };
 
   const adjustZoom = (zoomFactor: number) => {
@@ -167,17 +182,15 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
   const clearPolygon = () => {
     setPolygonPoints([]);
     setIsPolygonClosed(false);
+    setDraggingVertexIndex(null);
   };
 
-  const handleStageClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (!resolvedImageSrc || dragMovedRef.current || isPolygonClosed) {
-      return;
-    }
 
+  const getImageCoordinates = (clientX: number, clientY: number) => {
     const stage = imageStageRef.current;
     const image = imageRef.current;
     if (!stage || !image) {
-      return;
+      return null;
     }
 
     const stageRect = stage.getBoundingClientRect();
@@ -185,20 +198,41 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
     const imageHeight = image.clientHeight;
 
     if (!imageWidth || !imageHeight) {
-      return;
+      return null;
     }
 
-    const stageX = event.clientX - stageRect.left;
-    const stageY = event.clientY - stageRect.top;
+    const stageX = clientX - stageRect.left;
+    const stageY = clientY - stageRect.top;
 
     const imageX = (stageX - stageRect.width / 2 - view.offsetX) / view.zoom + imageWidth / 2;
     const imageY = (stageY - stageRect.height / 2 - view.offsetY) / view.zoom + imageHeight / 2;
 
     if (imageX < 0 || imageY < 0 || imageX > imageWidth || imageY > imageHeight) {
+      return null;
+    }
+
+    return { x: imageX, y: imageY };
+  };
+
+  const startVertexDrag = (event: MouseEvent<SVGCircleElement>, index: number) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setDraggingVertexIndex(index);
+    setIsDragging(false);
+    dragMovedRef.current = false;
+  };
+
+  const handleStageClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!resolvedImageSrc || dragMovedRef.current || isPolygonClosed || draggingVertexIndex !== null) {
       return;
     }
 
-    setPolygonPoints((current) => [...current, { x: imageX, y: imageY }]);
+    const coords = getImageCoordinates(event.clientX, event.clientY);
+    if (!coords) {
+      return;
+    }
+
+    setPolygonPoints((current) => [...current, coords]);
   };
 
   const pointList = polygonPoints.map((point) => `${point.x},${point.y}`).join(" ");
@@ -243,10 +277,12 @@ function WorkspaceCanvas({ imageUrl, imageSrc, imageName, errorMessage }: Worksp
                   {polygonPoints.map((point, index) => (
                     <circle
                       key={`${point.x}-${point.y}-${index}`}
-                      className="workspace-polygon-point"
+                      className={`workspace-polygon-point ${draggingVertexIndex === index ? "is-active" : ""}`}
                       cx={point.x}
                       cy={point.y}
-                      r={4}
+                      r={6}
+                      onMouseDown={(event) => startVertexDrag(event, index)}
+                      onClick={(event) => event.stopPropagation()}
                     />
                   ))}
                 </svg>
